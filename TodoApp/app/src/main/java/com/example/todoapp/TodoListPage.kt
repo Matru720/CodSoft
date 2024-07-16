@@ -15,6 +15,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.Checkbox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
@@ -38,6 +39,7 @@ fun TodoListPage(viewModel: TodoViewModel) {
     val todoList by viewModel.todoList.observeAsState()
     var inputTitle by remember { mutableStateOf("") }
     var inputSubtitle by remember { mutableStateOf("") }
+    var editingTodo by remember { mutableStateOf<Todo?>(null) }
 
     Column(
         modifier = Modifier
@@ -63,11 +65,17 @@ fun TodoListPage(viewModel: TodoViewModel) {
                 )
             }
             Button(onClick = {
-                viewModel.addTodo(inputTitle, inputSubtitle)
+                if (editingTodo != null) {
+                    val updatedTodo = editingTodo!!.copy(title = inputTitle, subtitle = inputSubtitle)
+                    viewModel.updateTodo(updatedTodo)
+                    editingTodo = null
+                } else {
+                    viewModel.addTodo(inputTitle, inputSubtitle)
+                }
                 inputTitle = ""
                 inputSubtitle = ""
             }) {
-                Text(text = "ADD")
+                Text(text = if (editingTodo != null) "UPDATE" else "ADD")
             }
         }
         todoList?.let {
@@ -77,21 +85,29 @@ fun TodoListPage(viewModel: TodoViewModel) {
                         item = item,
                         onDelete = {
                             viewModel.deleteTodo(item.id)
+                        },
+                        onEdit = {
+                            inputTitle = item.title
+                            inputSubtitle = item.subtitle
+                            editingTodo = item
+                        },
+                        onToggleCompletion = {
+                            viewModel.toggleTodoCompletion(item.id, !item.completed)
                         }
                     )
                 }
             })
-        } ?: Text(
+        } ?:Text(
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center,
             text = "No Tasks",
-            fontSize = 16.sp
+            fontSize = 20.sp
         )
     }
 }
 
 @Composable
-fun TodoItem(item: Todo, onDelete: () -> Unit) {
+fun TodoItem(item: Todo, onDelete: () -> Unit, onEdit: () -> Unit, onToggleCompletion: () -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
@@ -105,18 +121,22 @@ fun TodoItem(item: Todo, onDelete: () -> Unit) {
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        Checkbox(
+            checked = item.completed,
+            onCheckedChange = { onToggleCompletion() }
+        )
         Column(
             modifier = Modifier.weight(1f)
         ) {
             Text(
                 text = item.title,
                 fontSize = 20.sp,
-                color = Color.Black
+                color = if (item.completed) Color.Gray else Color.Black
             )
             Text(
                 text = item.subtitle,
                 fontSize = 10.sp,
-                color = Color.Black
+                color = if (item.completed) Color.Gray else Color.Black
             )
             Text(
                 text = SimpleDateFormat("HH:mm:aa, dd/MM", Locale.ENGLISH).format(item.createdAt),
@@ -128,6 +148,13 @@ fun TodoItem(item: Todo, onDelete: () -> Unit) {
             Icon(
                 painter = painterResource(id = R.drawable.delete_24),
                 contentDescription = "delete",
+                tint = Color.Black
+            )
+        }
+        IconButton(onClick = onEdit) {
+            Icon(
+                painter = painterResource(id = R.drawable.edit_24),
+                contentDescription = "edit",
                 tint = Color.Black
             )
         }
