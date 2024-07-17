@@ -64,7 +64,7 @@ fun QuoteListScreen(data: Array<Quote>, onClick: (quote: Quote) -> Unit) {
                     painter = painterResource(id = R.drawable.favorite),
                     colorFilter = ColorFilter.tint(Color.Black),
                     //modifier = Modifier.padding(PaddingValues(start = 10.dp)),
-                    contentDescription = "Share",
+                    contentDescription = "Favorite",
                     modifier = Modifier.background(Color.White)
                 )
             }
